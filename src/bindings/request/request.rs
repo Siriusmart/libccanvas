@@ -11,7 +11,7 @@ pub struct Request {
     /// reciever
     target: Discriminator,
     /// the content of the request
-    content: RequestContent,
+    pub content: RequestContent,
     /// confirmation identifier
     id: u32,
 }
@@ -59,4 +59,14 @@ pub enum RequestContent {
     #[serde(rename = "drop")]
     /// drop (remove) a component
     Drop { discrim: Option<Discriminator> },
+
+    #[serde(rename = "render")]
+    /// render something on canvas
+    Render { content: RenderRequest },
+}
+
+#[derive(Serialize, Clone, PartialEq, Eq, Debug)]
+pub enum RenderRequest {
+    #[serde(rename = "set char")]
+    SetChar { x: u32, y: u32, c: char },
 }

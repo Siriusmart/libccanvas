@@ -28,7 +28,7 @@ impl Event {
                     Discriminator::default(),
                     RequestContent::ConfirmRecieve { id, pass },
                 ))
-                .unwrap()
+                .unwrap();
         }
     }
 

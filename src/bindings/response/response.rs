@@ -34,8 +34,8 @@ pub enum ResponseContent {
 
 #[derive(Deserialize, Clone, PartialEq, Debug)]
 pub enum ResponseError {
-    #[serde(rename = "already subscribed")]
-    AlreadySubscribed,
+    #[serde(rename = "component not found")]
+    ComponentNotFound,
 }
 
 #[derive(Deserialize, Clone, PartialEq, Debug)]
@@ -45,4 +45,10 @@ pub enum ResponseSuccess {
 
     #[serde(rename = "listener set")]
     ListenerSet,
+
+    #[serde(rename = "dropped")]
+    Dropped,
+
+    #[serde(rename = "rendered")]
+    Rendered,
 }

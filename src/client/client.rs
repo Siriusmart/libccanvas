@@ -15,7 +15,8 @@ use tokio::{
 };
 
 use crate::bindings::{
-    Discriminator, Event, Request, RequestContent, Response, ResponseContent, Subscription,
+    Discriminator, Event, RenderRequest, Request, RequestContent, Response, ResponseContent,
+    Subscription,
 };
 
 use super::ClientConfig;
@@ -55,15 +56,15 @@ impl Client {
 
         let (inbound_send, inbound_recv) = mpsc::unbounded_channel();
         let (outbound_send, mut outbound_recv) = mpsc::unbounded_channel();
-        let req_confirms: Arc<Mutex<HashMap<u32, oneshot::Sender<ResponseContent>>>> = Arc::new(Mutex::new(HashMap::default()));
+        let req_confirms: Arc<Mutex<HashMap<u32, oneshot::Sender<ResponseContent>>>> =
+            Arc::new(Mutex::new(HashMap::default()));
 
         let listener_handle = {
             let outbound_send = outbound_send.clone();
             let req_confirms = req_confirms.clone();
             tokio::task::spawn_blocking(move || {
-                let mut incoming = listener.incoming();
                 let outbound_send = outbound_send.clone();
-                while let Some(stream) = incoming.next() {
+                for stream in listener.incoming() {
                     let mut stream = match stream {
                         Ok(stream) => stream,
                         Err(_) => continue,
@@ -166,11 +167,21 @@ impl Client {
         self.send(req).await
     }
 
-    pub async fn exit(self) -> ResponseContent {
+    pub async fn exit(&self) -> ResponseContent {
         let req = Request::new(
             Discriminator::default(),
             RequestContent::Drop {
                 discrim: Some(Discriminator::new(vec![1])),
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn setchar(&self, x: u32, y: u32, c: char) -> ResponseContent {
+        let req = Request::new(
+            Discriminator::default(),
+            RequestContent::Render {
+                content: RenderRequest::SetChar { x, y, c },
             },
         );
         self.send(req).await
