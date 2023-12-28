@@ -15,8 +15,8 @@ use tokio::{
 };
 
 use crate::bindings::{
-    Discriminator, Event, RenderRequest, Request, RequestContent, Response, ResponseContent,
-    Subscription,
+    Colour, CursorStyle, Discriminator, Event, RenderRequest, Request, RequestContent, Response,
+    ResponseContent, Subscription,
 };
 
 use super::ClientConfig;
@@ -182,6 +182,179 @@ impl Client {
             Discriminator::default(),
             RequestContent::Render {
                 content: RenderRequest::SetChar { x, y, c },
+                flush: true,
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn setchar_noflush(&self, x: u32, y: u32, c: char) -> ResponseContent {
+        let req = Request::new(
+            Discriminator::default(),
+            RequestContent::Render {
+                content: RenderRequest::SetChar { x, y, c },
+                flush: false,
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn setcharcoloured(
+        &self,
+        x: u32,
+        y: u32,
+        c: char,
+        fg: Colour,
+        bg: Colour,
+    ) -> ResponseContent {
+        let req = Request::new(
+            Discriminator::default(),
+            RequestContent::Render {
+                content: RenderRequest::SetCharColoured { x, y, c, fg, bg },
+                flush: true,
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn setcharcoloured_noflush(
+        &self,
+        x: u32,
+        y: u32,
+        c: char,
+        fg: Colour,
+        bg: Colour,
+    ) -> ResponseContent {
+        let req = Request::new(
+            Discriminator::default(),
+            RequestContent::Render {
+                content: RenderRequest::SetCharColoured { x, y, c, fg, bg },
+                flush: false,
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn setcursorstyle(&self, style: CursorStyle) -> ResponseContent {
+        let req = Request::new(
+            Discriminator::default(),
+            RequestContent::Render {
+                content: RenderRequest::SetCursorStyle { style },
+                flush: true,
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn setcursorstyle_noflush(&self, style: CursorStyle) -> ResponseContent {
+        let req = Request::new(
+            Discriminator::default(),
+            RequestContent::Render {
+                content: RenderRequest::SetCursorStyle { style },
+                flush: false,
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn showcursor(&self) -> ResponseContent {
+        let req = Request::new(
+            Discriminator::default(),
+            RequestContent::Render {
+                content: RenderRequest::ShowCursor,
+                flush: true,
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn showcursor_noflush(&self) -> ResponseContent {
+        let req = Request::new(
+            Discriminator::default(),
+            RequestContent::Render {
+                content: RenderRequest::ShowCursor,
+                flush: false,
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn hidecursor(&self) -> ResponseContent {
+        let req = Request::new(
+            Discriminator::default(),
+            RequestContent::Render {
+                content: RenderRequest::HideCursor,
+                flush: true,
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn hidecursor_noflush(&self) -> ResponseContent {
+        let req = Request::new(
+            Discriminator::default(),
+            RequestContent::Render {
+                content: RenderRequest::HideCursor,
+                flush: false,
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn spawn_at(
+        &self,
+        label: String,
+        command: String,
+        args: Vec<String>,
+        parent: Discriminator,
+    ) -> ResponseContent {
+        let req = Request::new(
+            parent,
+            RequestContent::Spawn {
+                command,
+                args,
+                label,
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn spawn(
+        &self,
+        label: String,
+        command: String,
+        args: Vec<String>,
+    ) -> ResponseContent {
+        let req = Request::new(
+            Discriminator::default(),
+            RequestContent::Spawn {
+                command,
+                args,
+                label,
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn message(&self, target: Discriminator, content: String) -> ResponseContent {
+        let req = Request::new(
+            target.clone(),
+            RequestContent::Message {
+                content,
+                sender: Discriminator::default(),
+                target,
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn broadcast(&self, content: String) -> ResponseContent {
+        let req = Request::new(
+            Discriminator::master(),
+            RequestContent::Message {
+                content,
+                sender: Discriminator::default(),
+                target: Discriminator::master(),
             },
         );
         self.send(req).await

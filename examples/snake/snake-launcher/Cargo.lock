@@ -42,7 +42,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ccanvas-setchar"
+name = "ccanvas-snake"
 version = "0.1.0"
 dependencies = [
  "libccanvas",

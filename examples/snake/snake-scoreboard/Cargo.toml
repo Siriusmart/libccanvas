@@ -1,10 +1,10 @@
 [package]
-name = "ccanvas-basic"
+name = "ccanvas-snake-scoreboard"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libccanvas = { path = "../../" }
-tokio = { version = "1", features = [ "macros" ]}
+libccanvas = { path = "../../../" }
+tokio = { version = "1", features = [ "macros", "time" ]}

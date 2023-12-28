@@ -4,6 +4,7 @@ use libccanvas::{bindings::*, client::*};
 async fn main() {
     let client = Client::new(ClientConfig::default()).unwrap();
     client.subscribe(Subscription::AllKeyPresses).await;
+    client.hidecursor().await;
 
     // draw the frame
     for x in 1..41 {
@@ -24,10 +25,10 @@ async fn main() {
     let mut x = 10;
     let mut y = 10;
 
-    while let Some(mut event) = client.recv().await {
-        event.done(true);
-        match event.get() {
-            EventVariant::Key(key) => match key.code {
+
+    while let Some(event) = client.recv().await {
+        if let EventVariant::Key(key) = event.get() {
+            match key.code {
                 KeyCode::Char('q') => {
                     client.exit().await;
                 }
@@ -52,10 +53,8 @@ async fn main() {
                     x += 1;
                     client.setchar(x * 2, y, '▄').await;
                 }
-                _ => {
-                }
-            },
-            _ => {}
+                _ => {}
+            }
         }
     }
 }

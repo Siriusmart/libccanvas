@@ -1,5 +1,7 @@
 use serde::Deserialize;
 
+use crate::bindings::Discriminator;
+
 use super::EventVariant;
 
 #[derive(Deserialize, Clone, PartialEq, Debug)]
@@ -33,12 +35,16 @@ pub enum ResponseContent {
 }
 
 #[derive(Deserialize, Clone, PartialEq, Debug)]
+#[serde(tag = "type")]
 pub enum ResponseError {
     #[serde(rename = "component not found")]
     ComponentNotFound,
+    #[serde(rename = "spawn failed")]
+    SpawnFailed,
 }
 
 #[derive(Deserialize, Clone, PartialEq, Debug)]
+#[serde(tag = "type")]
 pub enum ResponseSuccess {
     #[serde(rename = "subscribe added")]
     SubscribeAdded,
@@ -51,4 +57,10 @@ pub enum ResponseSuccess {
 
     #[serde(rename = "rendered")]
     Rendered,
+
+    #[serde(rename = "spawned")]
+    Spawned { discrim: Discriminator },
+
+    #[serde(rename = "message delivered")]
+    MessageDelivered,
 }

@@ -1,6 +1,8 @@
 //! basically copied from the main repo of /ccanvas
 use serde::Deserialize;
 
+use crate::bindings::Discriminator;
+
 #[derive(Deserialize, Clone, PartialEq, Debug)]
 #[serde(tag = "type")]
 pub enum EventVariant {
@@ -12,6 +14,12 @@ pub enum EventVariant {
     /// screen resize event (should trigger a rerender)
     #[serde(rename = "resize")]
     Resize { width: u32, height: u32 },
+    #[serde(rename = "message")]
+    Message {
+        sender: Discriminator,
+        target: Discriminator,
+        content: String,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Deserialize)]
@@ -39,7 +47,7 @@ pub enum KeyModifier {
     None,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, serde::Serialize, Deserialize)]
 pub enum KeyCode {
     /// Backspace.
     #[serde(rename = "backspace")]

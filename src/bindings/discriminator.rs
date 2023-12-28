@@ -10,4 +10,8 @@ impl Discriminator {
     pub fn new(path: Vec<u32>) -> Self {
         Self(path)
     }
+
+    pub fn master() -> Self {
+        Self(vec![1])
+    }
 }
