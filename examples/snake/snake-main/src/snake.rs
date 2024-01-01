@@ -14,7 +14,7 @@ pub struct Snake {
 }
 
 impl Snake {
-    pub async fn render_forward(&mut self, client: &Client, score: &mut u32) {
+    pub async fn render_forward(&mut self, client: &mut Client, score: &mut u32) {
         // add head to body
         self.body.push_front(self.head);
 
@@ -32,7 +32,7 @@ impl Snake {
         if self.overlaps_fruit(&self.fruit) {
             // so spawn in a new fruit
             self.new_fruit();
-            self.fruit.render(client).await;
+            self.fruit.render(client);
             *score += 1;
             // and broadcast the new score
             // so the scoreboard component will draw the new score
@@ -40,22 +40,18 @@ impl Snake {
         } else {
             // remove tail
             let (tailx, taily) = self.body.pop_back().unwrap();
-            client.setchar_noflush(2 * tailx + 1, taily + 2, ' ').await;
-            client.setchar_noflush(2 * tailx + 2, taily + 2, ' ').await;
+            client.setchar(2 * tailx + 1, taily + 2, ' ');
+            client.setchar(2 * tailx + 2, taily + 2, ' ');
         }
 
         // add head
-        client
-            .setchar_noflush(2 * self.head.0 + 1, self.head.1 + 2, '█')
-            .await;
-        client
-            .setchar(2 * self.head.0 + 2, self.head.1 + 2, '█')
-            .await;
+        client.setchar(2 * self.head.0 + 1, self.head.1 + 2, '█');
+        client.setchar(2 * self.head.0 + 2, self.head.1 + 2, '█');
 
         self.previous_heading = self.heading;
     }
 
-    pub async fn new(client: &Client) -> Self {
+    pub async fn new(client: &mut Client) -> Self {
         // the default state of the snake - going up in the middle of the playfield
         let mut out = Self {
             head: (10, 10),
@@ -66,7 +62,7 @@ impl Snake {
         };
 
         out.new_fruit();
-        out.fruit.render(client).await;
+        out.fruit.render(client);
         out
     }
 
@@ -88,28 +84,26 @@ impl Snake {
         }
     }
 
-    pub async fn game_over(&self, client: &Client) -> bool {
+    pub async fn game_over(&self, client: &mut Client) -> bool {
         if self.body.contains(&self.head) {
             // if game over, then return true
             // and draw red on the pixel of collision
-            client
-                .setcharcoloured_noflush(
-                    2 * self.head.0 + 1,
-                    self.head.1 + 2,
-                    '█',
-                    Colour::Red,
-                    Colour::Reset,
-                )
-                .await;
-            client
-                .setcharcoloured(
-                    2 * self.head.0 + 2,
-                    self.head.1 + 2,
-                    '█',
-                    Colour::Red,
-                    Colour::Reset,
-                )
-                .await;
+            client.setcharcoloured(
+                2 * self.head.0 + 1,
+                self.head.1 + 2,
+                '█',
+                Colour::Red,
+                Colour::Reset,
+            );
+            client.setcharcoloured(
+                2 * self.head.0 + 2,
+                self.head.1 + 2,
+                '█',
+                Colour::Red,
+                Colour::Reset,
+            );
+
+            client.renderall().await;
             return true;
         }
 

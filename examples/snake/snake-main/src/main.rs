@@ -3,33 +3,36 @@ use std::time::Duration;
 use ccanvas_snake_main::{Direction, Snake};
 use libccanvas::{
     bindings::{EventVariant, KeyCode, Subscription},
-    client::{Client, ClientConfig},
+    client::Client,
 };
 use tokio::time::Instant;
 
 #[tokio::main]
 async fn main() {
-    let client = Client::new(ClientConfig::default()).unwrap();
+    let mut client = Client::default();
     client.subscribe(Subscription::AllKeyPresses).await;
-    client.hidecursor_noflush().await;
+    client.hidecursor();
 
     // draw the frame
     for x in 1..43 {
-        client.setchar_noflush(x, 1, '─').await;
-        client.setchar_noflush(x, 23, '─').await;
+        client.setchar(x, 1, '─');
+        client.setchar(x, 23, '─');
     }
 
     for y in 2..24 {
-        client.setchar_noflush(0, y, '│').await;
-        client.setchar_noflush(43, y, '│').await;
+        client.setchar(0, y, '│');
+        client.setchar(43, y, '│');
     }
 
-    client.setchar_noflush(43, 1, '╮').await;
-    client.setchar_noflush(0, 1, '╭').await;
-    client.setchar_noflush(43, 23, '╯').await;
-    client.setchar(0, 23, '╰').await;
+    client.setchar(43, 1, '╮');
+    client.setchar(0, 1, '╭');
+    client.setchar(43, 23, '╯');
+    client.setchar(0, 23, '╰');
 
-    let mut snake = Snake::new(&client).await;
+    let mut snake = Snake::new(&mut client).await;
+
+    client.renderall().await;
+
     // give it a bit of suspense
     let mut next_tick = Instant::now() + Duration::from_millis(500);
 
@@ -57,13 +60,17 @@ async fn main() {
         }
 
         // render and forward the snake by 1 pixel
-        snake.render_forward(&client, &mut score).await;
+        snake.render_forward(&mut client, &mut score).await;
 
         // if game is over, then just exit the game script
         // this will freeze the screen and not exit yet
-        if snake.game_over(&client).await {
+        if snake.game_over(&mut client).await {
+            // flush all screen updates
+            client.renderall().await;
             break;
         }
+
+        client.renderall().await;
 
         // do some maths to make the snake go faster and faster
         // plot the graph in desmos to see how it looks like

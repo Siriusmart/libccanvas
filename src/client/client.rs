@@ -1,8 +1,8 @@
 use std::{
     collections::HashMap,
-    error::Error,
     io::{Read, Write},
     os::unix::net::{UnixListener, UnixStream},
+    path::PathBuf,
     sync::Arc,
 };
 
@@ -16,7 +16,7 @@ use tokio::{
 
 use crate::bindings::{
     Colour, CursorStyle, Discriminator, Event, RenderRequest, Request, RequestContent, Response,
-    ResponseContent, Subscription,
+    ResponseContent, ResponseSuccess, Subscription,
 };
 
 use super::ClientConfig;
@@ -31,33 +31,43 @@ pub struct Client {
     /// request to ccanvas
     outbound_send: UnboundedSender<Request>,
 
+    /// path to request socket
+    request_socket: PathBuf,
+    /// unflushed render requests
+    render_requests: Vec<RenderRequest>,
     /// confirmation handles for requests
     req_confirms: Arc<Mutex<HashMap<u32, oneshot::Sender<ResponseContent>>>>,
+}
+
+impl Default for Client {
+    fn default() -> Self {
+        Self::new(ClientConfig::default())
+    }
 }
 
 static mut REQID: OnceCell<u32> = OnceCell::const_new_with(0);
 
 impl Client {
-    pub fn new(config: ClientConfig) -> Result<Self, Box<dyn Error>> {
+    pub fn new(config: ClientConfig) -> Self {
         // creates the listener socket
-        let listener = UnixListener::bind(&config.listener_socket)?;
-
-        // connects and set the listener
-        UnixStream::connect(&config.request_socket)?.write_all(
-            serde_json::to_vec(&Request::new(
-                Discriminator::default(),
-                RequestContent::SetSocket {
-                    path: config.listener_socket,
-                },
-            ))
-            .unwrap()
-            .as_slice(),
-        )?;
+        let listener = UnixListener::bind(&config.listener_socket).unwrap();
 
         let (inbound_send, inbound_recv) = mpsc::unbounded_channel();
         let (outbound_send, mut outbound_recv) = mpsc::unbounded_channel();
         let req_confirms: Arc<Mutex<HashMap<u32, oneshot::Sender<ResponseContent>>>> =
             Arc::new(Mutex::new(HashMap::default()));
+
+        // connects and set the listener
+        let set_socket = Request::new(
+            Discriminator::default(),
+            RequestContent::SetSocket {
+                path: config.listener_socket,
+            },
+        );
+        UnixStream::connect(&config.request_socket)
+            .unwrap()
+            .write_all(serde_json::to_vec(&set_socket).unwrap().as_slice())
+            .unwrap();
 
         let listener_handle = {
             let outbound_send = outbound_send.clone();
@@ -108,26 +118,31 @@ impl Client {
             })
         };
 
-        // simply sends Request to canvas
-        let request_handle = tokio::task::spawn(async move {
-            while let Some(req) = outbound_recv.recv().await {
-                let request_socket = config.request_socket.clone();
-                tokio::task::spawn_blocking(move || {
-                    UnixStream::connect(request_socket)
-                        .unwrap()
-                        .write_all(serde_json::to_vec(&req).unwrap().as_slice())
-                        .unwrap();
-                });
-            }
-        });
+        let request_handle = {
+            let request_socket = config.request_socket.clone();
+            // simply sends Request to canvas
+            tokio::task::spawn(async move {
+                while let Some(req) = outbound_recv.recv().await {
+                    let request_socket = request_socket.clone();
+                    tokio::task::spawn_blocking(move || {
+                        UnixStream::connect(request_socket)
+                            .unwrap()
+                            .write_all(serde_json::to_vec(&req).unwrap().as_slice())
+                            .unwrap();
+                    });
+                }
+            })
+        };
 
-        Ok(Self {
+        Self {
             listener_handle,
             request_handle,
             inbound_recv: Arc::new(Mutex::new(inbound_recv)),
             outbound_send,
+            request_socket: config.request_socket,
+            render_requests: Vec::new(),
             req_confirms,
-        })
+        }
     }
 
     /// get a unique request id
@@ -167,6 +182,33 @@ impl Client {
         self.send(req).await
     }
 
+    pub async fn subscribe_priority(
+        &self,
+        channel: Subscription,
+        priority: u32,
+    ) -> ResponseContent {
+        let req = Request::new(
+            Discriminator::default(),
+            RequestContent::Subscribe {
+                channel,
+                priority: Some(priority),
+                component: None,
+            },
+        );
+        self.send(req).await
+    }
+
+    pub async fn unsubscribe(&self, channel: Subscription) -> ResponseContent {
+        let req = Request::new(
+            Discriminator::default(),
+            RequestContent::Unsubscribe {
+                channel,
+                component: None,
+            },
+        );
+        self.send(req).await
+    }
+
     pub async fn exit(&self) -> ResponseContent {
         let req = Request::new(
             Discriminator::default(),
@@ -177,125 +219,41 @@ impl Client {
         self.send(req).await
     }
 
-    pub async fn setchar(&self, x: u32, y: u32, c: char) -> ResponseContent {
+    pub fn setchar(&mut self, x: u32, y: u32, c: char) {
+        self.render_requests.push(RenderRequest::setchar(x, y, c))
+    }
+
+    pub fn setcharcoloured(&mut self, x: u32, y: u32, c: char, fg: Colour, bg: Colour) {
+        self.render_requests
+            .push(RenderRequest::setchar_coloured(x, y, c, fg, bg))
+    }
+
+    pub fn setcursorstyle(&mut self, style: CursorStyle) {
+        self.render_requests.push(RenderRequest::setcursor(style))
+    }
+
+    pub fn showcursor(&mut self) {
+        self.render_requests.push(RenderRequest::ShowCursor)
+    }
+
+    pub fn hidecursor(&mut self) {
+        self.render_requests.push(RenderRequest::HideCursor)
+    }
+
+    pub async fn renderall(&mut self) -> ResponseContent {
+        if self.render_requests.is_empty() {
+            return ResponseContent::Success {
+                content: ResponseSuccess::Rendered,
+            };
+        }
+
         let req = Request::new(
             Discriminator::default(),
             RequestContent::Render {
-                content: RenderRequest::SetChar { x, y, c },
                 flush: true,
-            },
-        );
-        self.send(req).await
-    }
-
-    pub async fn setchar_noflush(&self, x: u32, y: u32, c: char) -> ResponseContent {
-        let req = Request::new(
-            Discriminator::default(),
-            RequestContent::Render {
-                content: RenderRequest::SetChar { x, y, c },
-                flush: false,
-            },
-        );
-        self.send(req).await
-    }
-
-    pub async fn setcharcoloured(
-        &self,
-        x: u32,
-        y: u32,
-        c: char,
-        fg: Colour,
-        bg: Colour,
-    ) -> ResponseContent {
-        let req = Request::new(
-            Discriminator::default(),
-            RequestContent::Render {
-                content: RenderRequest::SetCharColoured { x, y, c, fg, bg },
-                flush: true,
-            },
-        );
-        self.send(req).await
-    }
-
-    pub async fn setcharcoloured_noflush(
-        &self,
-        x: u32,
-        y: u32,
-        c: char,
-        fg: Colour,
-        bg: Colour,
-    ) -> ResponseContent {
-        let req = Request::new(
-            Discriminator::default(),
-            RequestContent::Render {
-                content: RenderRequest::SetCharColoured { x, y, c, fg, bg },
-                flush: false,
-            },
-        );
-        self.send(req).await
-    }
-
-    pub async fn setcursorstyle(&self, style: CursorStyle) -> ResponseContent {
-        let req = Request::new(
-            Discriminator::default(),
-            RequestContent::Render {
-                content: RenderRequest::SetCursorStyle { style },
-                flush: true,
-            },
-        );
-        self.send(req).await
-    }
-
-    pub async fn setcursorstyle_noflush(&self, style: CursorStyle) -> ResponseContent {
-        let req = Request::new(
-            Discriminator::default(),
-            RequestContent::Render {
-                content: RenderRequest::SetCursorStyle { style },
-                flush: false,
-            },
-        );
-        self.send(req).await
-    }
-
-    pub async fn showcursor(&self) -> ResponseContent {
-        let req = Request::new(
-            Discriminator::default(),
-            RequestContent::Render {
-                content: RenderRequest::ShowCursor,
-                flush: true,
-            },
-        );
-        self.send(req).await
-    }
-
-    pub async fn showcursor_noflush(&self) -> ResponseContent {
-        let req = Request::new(
-            Discriminator::default(),
-            RequestContent::Render {
-                content: RenderRequest::ShowCursor,
-                flush: false,
-            },
-        );
-        self.send(req).await
-    }
-
-    pub async fn hidecursor(&self) -> ResponseContent {
-        let req = Request::new(
-            Discriminator::default(),
-            RequestContent::Render {
-                content: RenderRequest::HideCursor,
-                flush: true,
-            },
-        );
-        self.send(req).await
-    }
-
-    pub async fn hidecursor_noflush(&self) -> ResponseContent {
-        let req = Request::new(
-            Discriminator::default(),
-            RequestContent::Render {
-                content: RenderRequest::HideCursor,
-                flush: false,
+                content: RenderRequest::RenderMultiple {
+                    tasks: std::mem::take(&mut self.render_requests),
+                },
             },
         );
         self.send(req).await
@@ -365,5 +323,13 @@ impl Drop for Client {
     fn drop(&mut self) {
         self.listener_handle.abort();
         self.request_handle.abort();
+        let req = Request::new(
+            Discriminator::default(),
+            RequestContent::Drop { discrim: None },
+        );
+        UnixStream::connect(self.request_socket.clone())
+            .unwrap()
+            .write_all(serde_json::to_vec(&req).unwrap().as_slice())
+            .unwrap();
     }
 }

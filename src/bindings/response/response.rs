@@ -49,6 +49,9 @@ pub enum ResponseSuccess {
     #[serde(rename = "subscribe added")]
     SubscribeAdded,
 
+    #[serde(rename = "subscribe removed")]
+    SubscribeRemoved,
+
     #[serde(rename = "listener set")]
     ListenerSet,
 

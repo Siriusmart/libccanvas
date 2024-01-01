@@ -21,4 +21,6 @@ ccanvas setchar ccanvas-snake
 
 ## Showcase
 
-![](./ccanvas-snake.webm)
+Click on the image for video.
+
+[![](https://gmtex.siri.sh/api/usercontent/v1/file/id/1/tex/Dump/Showcases/ccanvas-snake.png)](https://gmtex.siri.sh/fs/1/Dump/Showcases/ccanvas-snake.webm)

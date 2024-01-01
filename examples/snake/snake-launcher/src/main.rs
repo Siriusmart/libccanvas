@@ -1,11 +1,26 @@
-use libccanvas::{client::{Client, ClientConfig}, bindings::{EventVariant, KeyCode, Subscription}};
+use libccanvas::{
+    bindings::{EventVariant, KeyCode, Subscription},
+    client::Client,
+};
 
 #[tokio::main]
 async fn main() {
-    let client = Client::new(ClientConfig::default()).unwrap();
+    let client = Client::default();
     // spawns in the 2 processes
-    client.spawn("snake-main".to_string(), "ccanvas-snake-main".to_string(), Vec::new()).await;
-    client.spawn("snake-scoreboard".to_string(), "ccanvas-snake-scoreboard".to_string(), Vec::new()).await;
+    client
+        .spawn(
+            "snake-main".to_string(),
+            "ccanvas-snake-main".to_string(),
+            Vec::new(),
+        )
+        .await;
+    client
+        .spawn(
+            "snake-scoreboard".to_string(),
+            "ccanvas-snake-scoreboard".to_string(),
+            Vec::new(),
+        )
+        .await;
 
     client.subscribe(Subscription::AllKeyPresses).await;
 

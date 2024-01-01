@@ -20,24 +20,20 @@ impl Fruit {
         }
     }
 
-    pub async fn render(&self, client: &Client) {
-        client
-            .setcharcoloured_noflush(
-                2 * self.x + 1,
-                self.y + 2,
-                '█',
-                Colour::LightMagenta,
-                Colour::Reset,
-            )
-            .await;
-        client
-            .setcharcoloured_noflush(
-                2 * self.x + 2,
-                self.y + 2,
-                '█',
-                Colour::LightMagenta,
-                Colour::Reset,
-            )
-            .await;
+    pub fn render(&self, client: &mut Client) {
+        client.setcharcoloured(
+            2 * self.x + 1,
+            self.y + 2,
+            '█',
+            Colour::LightMagenta,
+            Colour::Reset,
+        );
+        client.setcharcoloured(
+            2 * self.x + 2,
+            self.y + 2,
+            '█',
+            Colour::LightMagenta,
+            Colour::Reset,
+        )
     }
 }

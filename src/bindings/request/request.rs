@@ -52,6 +52,13 @@ pub enum RequestContent {
         component: Option<Discriminator>,
     },
 
+    #[serde(rename = "Unsubscribe")]
+    /// remove subscription from a channel
+    Unsubscribe {
+        channel: Subscription,
+        component: Option<Discriminator>,
+    },
+
     #[serde(rename = "set socket")]
     /// sent responses to this socket
     SetSocket { path: PathBuf },
@@ -104,6 +111,23 @@ pub enum RenderRequest {
     HideCursor,
     #[serde(rename = "show cursor")]
     ShowCursor,
+
+    #[serde(rename = "render multiple")]
+    RenderMultiple { tasks: Vec<Self> },
+}
+
+impl RenderRequest {
+    pub fn setchar(x: u32, y: u32, c: char) -> Self {
+        Self::SetChar { x, y, c }
+    }
+
+    pub fn setchar_coloured(x: u32, y: u32, c: char, fg: Colour, bg: Colour) -> Self {
+        Self::SetCharColoured { x, y, c, fg, bg }
+    }
+
+    pub fn setcursor(style: CursorStyle) -> Self {
+        Self::SetCursorStyle { style }
+    }
 }
 
 #[derive(Serialize, Clone, Copy, PartialEq, Eq, Debug)]

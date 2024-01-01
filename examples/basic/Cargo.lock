@@ -33,20 +33,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "basic"
-version = "0.1.0"
-dependencies = [
- "libccanvas",
- "tokio",
-]
-
-[[package]]
 name = "cc"
 version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1174fb0b6ec23863f8b971027804a42614e347eafb0a95bf0b12cdae21fc4d0"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "ccanvas-basic"
+version = "0.1.0"
+dependencies = [
+ "libccanvas",
+ "tokio",
 ]
 
 [[package]]
