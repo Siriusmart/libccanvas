@@ -22,7 +22,9 @@ async fn main() {
         )
         .await;
 
-    client.subscribe(Subscription::AllKeyPresses).await;
+    client
+        .subscribe(Subscription::specific_keycode(KeyCode::Char('q')))
+        .await;
 
     // and listens for 'q' to exit the canvas
     while let Some(event) = client.recv().await {

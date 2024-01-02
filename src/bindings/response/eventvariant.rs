@@ -1,28 +1,34 @@
 //! basically copied from the main repo of /ccanvas
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::bindings::Discriminator;
 
-#[derive(Deserialize, Clone, PartialEq, Debug)]
+#[derive(Deserialize, Clone, PartialEq, Debug, Hash)]
 #[serde(tag = "type")]
 pub enum EventVariant {
     /// keyboard event
     #[serde(rename = "key")]
     Key(KeyEvent),
+    /// mouse event
     #[serde(rename = "mouse")]
     Mouse(MouseEvent),
     /// screen resize event (should trigger a rerender)
     #[serde(rename = "resize")]
     Resize { width: u32, height: u32 },
+    /// message passed from another process
     #[serde(rename = "message")]
     Message {
         sender: Discriminator,
         target: Discriminator,
         content: String,
     },
+    #[serde(rename = "focused")]
+    Focused,
+    #[serde(rename = "unfocused")]
+    Unfocused,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Hash)]
 pub struct KeyEvent {
     /// the keycode represented by the characetr
     pub code: KeyCode,
@@ -36,7 +42,7 @@ impl KeyEvent {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Hash)]
 pub enum KeyModifier {
     #[serde(rename = "alt")]
     Alt,
@@ -47,7 +53,7 @@ pub enum KeyModifier {
     None,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, serde::Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Hash)]
 pub enum KeyCode {
     /// Backspace.
     #[serde(rename = "backspace")]
@@ -101,7 +107,7 @@ pub enum KeyCode {
     Esc,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct MouseEvent {
     /// where the mouse event is
     pub x: u32,
@@ -111,7 +117,7 @@ pub struct MouseEvent {
     pub r#type: MouseType,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum MouseType {
     /// The left mouse button.
     Left,

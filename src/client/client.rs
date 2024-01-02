@@ -170,28 +170,25 @@ impl Client {
 
 /// convenience functions
 impl Client {
-    pub async fn subscribe(&self, channel: Subscription) -> ResponseContent {
+    pub async fn subscribe<T: Into<(Subscription, Option<u32>)>>(&self, channel: T) -> ResponseContent {
+        let (channel, priority) = channel.into();
         let req = Request::new(
             Discriminator::default(),
             RequestContent::Subscribe {
                 channel,
-                priority: None,
+                priority,
                 component: None,
             },
         );
         self.send(req).await
     }
 
-    pub async fn subscribe_priority(
-        &self,
-        channel: Subscription,
-        priority: u32,
-    ) -> ResponseContent {
+    pub async fn subscribe_multiple<T: Into<(Subscription, Option<u32>)>>(&self, channels: Vec<T>) -> ResponseContent {
         let req = Request::new(
             Discriminator::default(),
             RequestContent::Subscribe {
-                channel,
-                priority: Some(priority),
+                channel: Subscription::Multiple { subs: channels.into_iter().map(|item| item.into()).collect() },
+                priority: None,
                 component: None,
             },
         );

@@ -10,7 +10,14 @@ use tokio::time::Instant;
 #[tokio::main]
 async fn main() {
     let mut client = Client::default();
-    client.subscribe(Subscription::AllKeyPresses).await;
+    client
+        .subscribe_multiple(vec![
+            Subscription::specific_keycode(KeyCode::Up),
+            Subscription::specific_keycode(KeyCode::Down),
+            Subscription::specific_keycode(KeyCode::Left),
+            Subscription::specific_keycode(KeyCode::Right),
+        ])
+        .await;
     client.hidecursor();
 
     // draw the frame

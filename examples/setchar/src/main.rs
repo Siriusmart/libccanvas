@@ -3,7 +3,15 @@ use libccanvas::{bindings::*, client::*};
 #[tokio::main]
 async fn main() {
     let mut client = Client::default();
-    client.subscribe(Subscription::AllKeyPresses).await;
+    client
+        .subscribe_multiple(vec![
+            Subscription::specific_keycode(KeyCode::Up),
+            Subscription::specific_keycode(KeyCode::Down),
+            Subscription::specific_keycode(KeyCode::Left),
+            Subscription::specific_keycode(KeyCode::Right),
+            Subscription::specific_keycode(KeyCode::Char('q')),
+        ])
+        .await;
     client.hidecursor();
 
     // draw the frame
