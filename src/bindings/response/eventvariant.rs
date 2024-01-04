@@ -112,29 +112,35 @@ pub struct MouseEvent {
     /// where the mouse event is
     pub x: u32,
     pub y: u32,
-    #[serde(rename = "type")]
     /// what kind of event it is
-    pub r#type: MouseType,
+    pub mousetype: MouseType,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum MouseType {
+    #[serde(rename = "left")]
     /// The left mouse button.
     Left,
+    #[serde(rename = "right")]
     /// The right mouse button.
     Right,
+    #[serde(rename = "middle")]
     /// The middle mouse button.
     Middle,
+    #[serde(rename = "wheelup")]
     /// Mouse wheel is going up.
     ///
     /// This event is typically only used with Mouse::Press.
     WheelUp,
+    #[serde(rename = "wheeldown")]
     /// Mouse wheel is going down.
     ///
     /// This event is typically only used with Mouse::Press.
     WheelDown,
+    #[serde(rename = "release")]
     /// mouse release
     Release,
+    #[serde(rename = "hold")]
     /// is only emitted when u move the mouse, and only applies to left click
     Hold,
 }

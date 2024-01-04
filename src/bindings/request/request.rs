@@ -7,6 +7,7 @@ use crate::{bindings::Discriminator, client::Client};
 use super::Subscription;
 
 #[derive(Serialize, Debug, Clone)]
+/// request to send to the server
 pub struct Request {
     /// reciever
     target: Discriminator,
@@ -34,6 +35,7 @@ impl Request {
 
 #[derive(Serialize, Clone, PartialEq, Eq, Debug)]
 #[serde(tag = "type")]
+/// the real content of the request sent to server
 pub enum RequestContent {
     #[serde(rename = "confirm recieve")]
     /// confirm that an event has been recieved
@@ -88,13 +90,24 @@ pub enum RequestContent {
         sender: Discriminator,
         target: Discriminator,
     },
+
+    /// create a new space at a space
+    #[serde(rename = "new space")]
+    NewSpace { label: String },
+
+    /// focus a specific space
+    #[serde(rename = "focus at")]
+    FocusAt,
 }
 
 #[derive(Serialize, Clone, PartialEq, Eq, Debug)]
 #[serde(tag = "type")]
+/// a render request to the server
 pub enum RenderRequest {
+    /// change a single character
     #[serde(rename = "set char")]
     SetChar { x: u32, y: u32, c: char },
+    /// change a single character, coloured
     #[serde(rename = "set colouredchar")]
     SetCharColoured {
         x: u32,
@@ -103,34 +116,44 @@ pub enum RenderRequest {
         fg: Colour,
         bg: Colour,
     },
+    /// all the terminal to flush all changes, this is usually not needed
     #[serde(rename = "flush")]
     Flush,
+    /// set cursor looks
     #[serde(rename = "set cursorstyle")]
     SetCursorStyle { style: CursorStyle },
+    /// hide cursor
     #[serde(rename = "hide cursor")]
     HideCursor,
+    /// unhide cursor
     #[serde(rename = "show cursor")]
     ShowCursor,
 
+    /// render multiple items at the same time - guaranteed to be rendered at the same time, and
+    /// socket performance is significantly better than sending individual requests.
     #[serde(rename = "render multiple")]
     RenderMultiple { tasks: Vec<Self> },
 }
 
 impl RenderRequest {
+    /// create a setchar request
     pub fn setchar(x: u32, y: u32, c: char) -> Self {
         Self::SetChar { x, y, c }
     }
 
+    /// create a setchar coloured request
     pub fn setchar_coloured(x: u32, y: u32, c: char, fg: Colour, bg: Colour) -> Self {
         Self::SetCharColoured { x, y, c, fg, bg }
     }
 
+    /// create a setcursor request
     pub fn setcursor(style: CursorStyle) -> Self {
         Self::SetCursorStyle { style }
     }
 }
 
 #[derive(Serialize, Clone, Copy, PartialEq, Eq, Debug)]
+/// how the cursor should look
 pub enum CursorStyle {
     #[serde(rename = "blinking bar")]
     BlinkingBar,
@@ -148,6 +171,7 @@ pub enum CursorStyle {
 
 #[derive(Serialize, Clone, Copy, PartialEq, Eq, Debug)]
 #[serde(tag = "type")]
+/// generic colours
 pub enum Colour {
     #[serde(rename = "black")]
     Black,

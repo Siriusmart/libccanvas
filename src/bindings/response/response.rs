@@ -66,4 +66,10 @@ pub enum ResponseSuccess {
 
     #[serde(rename = "message delivered")]
     MessageDelivered,
+
+    #[serde(rename = "space created")]
+    SpaceCreated { discrim: Discriminator },
+
+    #[serde(rename = "focus changed")]
+    FocusChanged,
 }

@@ -16,7 +16,7 @@ I would recommend looking at all 3 components in the following order:
 Start the canvas using the command below.
 
 ```sh
-ccanvas setchar ccanvas-snake
+ccanvas snake ccanvas-snake
 ```
 
 ## Showcase

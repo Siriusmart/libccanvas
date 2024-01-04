@@ -170,7 +170,10 @@ impl Client {
 
 /// convenience functions
 impl Client {
-    pub async fn subscribe<T: Into<(Subscription, Option<u32>)>>(&self, channel: T) -> ResponseContent {
+    pub async fn subscribe<T: Into<(Subscription, Option<u32>)>>(
+        &self,
+        channel: T,
+    ) -> ResponseContent {
         let (channel, priority) = channel.into();
         let req = Request::new(
             Discriminator::default(),
@@ -183,11 +186,16 @@ impl Client {
         self.send(req).await
     }
 
-    pub async fn subscribe_multiple<T: Into<(Subscription, Option<u32>)>>(&self, channels: Vec<T>) -> ResponseContent {
+    pub async fn subscribe_multiple<T: Into<(Subscription, Option<u32>)>>(
+        &self,
+        channels: Vec<T>,
+    ) -> ResponseContent {
         let req = Request::new(
             Discriminator::default(),
             RequestContent::Subscribe {
-                channel: Subscription::Multiple { subs: channels.into_iter().map(|item| item.into()).collect() },
+                channel: Subscription::Multiple {
+                    subs: channels.into_iter().map(|item| item.into()).collect(),
+                },
                 priority: None,
                 component: None,
             },
@@ -288,6 +296,16 @@ impl Client {
                 label,
             },
         );
+        self.send(req).await
+    }
+
+    pub async fn focus_at(&self, discrim: Discriminator) -> ResponseContent {
+        let req = Request::new(discrim, RequestContent::FocusAt);
+        self.send(req).await
+    }
+
+    pub async fn new_space(&self, parent: Discriminator, label: String) -> ResponseContent {
+        let req = Request::new(parent, RequestContent::NewSpace { label });
         self.send(req).await
     }
 

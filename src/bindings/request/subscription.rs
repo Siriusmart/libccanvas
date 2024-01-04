@@ -4,6 +4,7 @@ use crate::bindings::{Discriminator, KeyCode, KeyEvent, KeyModifier, MouseType};
 
 #[derive(Hash, PartialEq, Eq, Serialize, Debug, Clone)]
 #[serde(tag = "type")]
+/// a single subscription request
 pub enum Subscription {
     /// subscribes to all key press events
     #[serde(rename = "all key presses")]
@@ -41,7 +42,9 @@ pub enum Subscription {
 
     #[serde(rename = "multiple")]
     /// subscribe to multiple channels at once
-    Multiple { subs: Vec<(Subscription, Option<u32>)> },
+    Multiple {
+        subs: Vec<(Subscription, Option<u32>)>,
+    },
 }
 
 impl Subscription {
@@ -52,7 +55,7 @@ impl Subscription {
     pub fn specific_keycode(code: KeyCode) -> Self {
         Self::SpecificKeyCode { code }
     }
-    
+
     pub fn specific_keymodifier(modifier: KeyModifier) -> Self {
         Self::SpecificKeyModifier { modifier }
     }

@@ -4,6 +4,7 @@ use crate::bindings::{Discriminator, Request, RequestContent};
 
 use super::EventVariant;
 
+/// an event binding struct, sends a confirm request when dropped
 pub struct Event {
     /// real content of the event
     content: EventVariant,
